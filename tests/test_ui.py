@@ -126,6 +126,14 @@ class FakeDB:
     def delete_everything(user_id, email):
         return {"files": 0}
 
+    @staticmethod
+    def list_applications(user_id):
+        return []
+
+    @staticmethod
+    def record_application(user_id, job_id, **kwargs):
+        return {"job_id": job_id}
+
 
 def _install_fake_db() -> dict:
     originals = {}
@@ -175,6 +183,15 @@ class PageTests(unittest.TestCase):
         labels = [m.label for m in app.metric]
         self.assertIn("Match score", labels)
         self.assertIn("Keyword coverage", labels)
+
+    def test_apply_page_offers_the_helper(self):
+        JOB_ROW["status"] = "ready"
+        app = self._run("views/apply.py")
+        text = " ".join([m.value for m in app.markdown] + [c.value for c in app.caption])
+        self.assertIn("Submit", text, "the page must say who presses Submit")
+        labels = [b.label for b in app.button]
+        self.assertIn("Build apply pack", labels)
+        JOB_ROW["status"] = "new"
 
     def test_settings_page(self):
         app = self._run("views/settings.py")

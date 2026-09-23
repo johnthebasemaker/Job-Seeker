@@ -11,3 +11,6 @@ __pycache__/
 *.pdf
 *.docx
 !docs/*.pdf
+
+# Your working notes, superseded by apps-script/
+Google Apps Script.md

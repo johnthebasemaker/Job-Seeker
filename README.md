@@ -9,10 +9,10 @@ Streamlit Cloud (Google sign-in)        GitHub Actions (daily cron)
   profile, discovery, tailoring,  <-->  fetch jobs from APIs, score, dedupe
   ATS report, PDF/Word download             |
             |                               v
-            +-------------------->  Supabase (Postgres + file storage)
-                                            ^
-Browser helper on the user's laptop  -------+   (next milestone)
-  fills the application form, the person clicks Submit
+            |  apply pack (.json)   Supabase (Postgres + file storage)
+            v
+Chrome helper on the laptop            Apps Script in the user's Google account
+  fills the form, person submits         Gmail invite -> Calendar + reminder
 ```
 
 ## The one design decision everything else follows from
@@ -42,9 +42,12 @@ boards (Greenhouse, Lever, Ashby), not from scraping.
   fabrication check that flags anything the AI added.
 - **Downloads** - ATS-safe PDF (Typst) and Word (python-docx), single column,
   real text, no tables.
-
-Next milestones: the Chrome helper extension, the application tracker, and
-the Google Apps Script that puts interview invites on the calendar.
+- **Applying** - the apply pack plus a Chrome helper that fills Indeed,
+  Greenhouse, Lever and Ashby forms and attaches the right PDF, then stops so
+  the person can check it and submit. See `extension/README.md`.
+- **Interview invites** - a Google Apps Script that runs in the job seeker's
+  own Google account, spots confirmed interviews in Gmail and puts them on
+  Calendar with reminders. See `apps-script/README.md`.
 
 ## Privacy model
 
@@ -80,7 +83,7 @@ nothing.
 | Key | Where | Free tier |
 | --- | --- | --- |
 | `GROQ_API_KEY` | console.groq.com | generous rate limits, no training on your data |
-| `JSEARCH_API_KEY` | rapidapi.com, JSearch | a few hundred calls a month - the main Indeed source |
+| `JSEARCH_API_KEY` | rapidapi.com, JSearch - open the API page and **Subscribe** to the free Basic plan, a key alone is not enough | a few hundred calls a month - the main Indeed source |
 | `ADZUNA_APP_ID` / `_KEY` | developer.adzuna.com | India, UK, Singapore and more; no Gulf coverage |
 | `JOOBLE_API_KEY` | jooble.org/api/about | covers India and the Gulf |
 
@@ -118,17 +121,16 @@ Push to GitHub, then at share.streamlit.io point a new app at `app.py` and
 paste the same secrets into **App settings -> Secrets**. Free apps sleep when
 idle and wake on the next visit.
 
-### 6. Before you switch the cron on
+### 6. The daily cron
 
-**Make the repository private first.** Workflow logs on a public repo are
-public, and `scripts/discover.py` runs against real user data. Private repos
-get 2,000 free Actions minutes a month, which is far more than a daily job
-needs.
+`.github/workflows/discover.yml` runs at 01:30 UTC (07:00 IST). It needs the
+same keys under **Settings -> Secrets and variables -> Actions**.
 
-Then add the same keys under **Settings -> Secrets and variables -> Actions**
-and uncomment the `schedule:` block in
-`.github/workflows/discover.yml`. Note that GitHub disables scheduled
-workflows in repositories with no activity for 60 days.
+**The repository must stay private.** Workflow logs on a public repo are
+readable by anyone and this job touches real user data. Private repos get
+2,000 free Actions minutes a month, far more than a daily run needs. Note
+that GitHub disables scheduled workflows in repositories with no activity for
+60 days - one commit resets that.
 
 ## Using it on a phone
 
@@ -142,6 +144,8 @@ Submitting through the helper needs a laptop.
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
+node extension/tests/rules.test.js
+.venv/bin/python scripts/check_keys.py      # one live call per configured key
 ```
 
 `tests/test_core.py` covers redaction, parsing, rendering, scoring and the
@@ -163,7 +167,10 @@ core/
   tailor.py             suggestions, chat, fabrication check
   jobs/                 one module per source, plus dedupe
 views/                  one file per Streamlit page
+extension/              the Chrome helper (manifest v3)
+apps-script/            the Gmail to Calendar script
 scripts/discover.py     the cron entry point
+scripts/check_keys.py   live check of every key, prints no secrets
 supabase/schema.sql     the database, as applied
 ```
 

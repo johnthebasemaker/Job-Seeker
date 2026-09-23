@@ -114,6 +114,11 @@ class LLM:
         }
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
+        if "gpt-oss" in self.model:
+            # gpt-oss thinks before it answers and the thinking counts against
+            # max_tokens. Left on "high" a short budget is spent reasoning and
+            # the reply comes back empty.
+            payload["reasoning_effort"] = config.get("GROQ_REASONING_EFFORT", "low")
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {config.groq_api_key()}",

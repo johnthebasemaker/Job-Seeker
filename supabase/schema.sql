@@ -71,6 +71,7 @@ create table if not exists tailoring (
     resume_md   text,                                 -- tailored, contact-free
     ats         jsonb not null default '{}'::jsonb,   -- deterministic ATS report
     chat        jsonb not null default '[]'::jsonb,   -- [{role, content, ts}]
+    cover_note  text,
     warnings    jsonb not null default '[]'::jsonb,   -- fabrication checks
     created_at  timestamptz not null default now(),
     updated_at  timestamptz not null default now(),

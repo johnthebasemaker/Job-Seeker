@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Job Seeker Helper</title>
+    <style>
+      :root { color-scheme: light; }
+      body {
+        font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        width: 320px; margin: 0; background: #fff; color: #18181b;
+      }
+      header { padding: 12px 14px; background: #2563eb; color: #fff; }
+      header h1 { margin: 0; font-size: 14px; }
+      header p { margin: 2px 0 0; font-size: 11px; opacity: .85; }
+      main { padding: 12px 14px 14px; }
+      .muted { color: #52525b; font-size: 12px; }
+      .card { border: 1px solid #e4e4e7; border-radius: 10px; padding: 10px; margin-top: 8px; }
+      .card h2 { margin: 0 0 2px; font-size: 13px; }
+      .row { display: flex; gap: 6px; margin-top: 8px; }
+      button, .filelabel {
+        flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #d4d4d8;
+        background: #f4f4f5; color: #18181b; font-size: 12px; font-weight: 600;
+        cursor: pointer; text-align: center;
+      }
+      button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+      button.link { background: none; border: 0; color: #b91c1c; font-weight: 500;
+        padding: 4px 0; text-align: left; }
+      input[type="file"] { display: none; }
+      ul { list-style: none; margin: 10px 0 0; padding: 0; }
+      footer { padding: 10px 14px; border-top: 1px solid #e4e4e7; font-size: 11px; color: #52525b; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Job Seeker Helper</h1>
+      <p>Fills the form. You press Submit.</p>
+    </header>
+    <main>
+      <div id="status" class="muted">Loading…</div>
+      <div class="row">
+        <label class="filelabel" for="packfile">Import apply pack</label>
+        <input id="packfile" type="file" accept="application/json,.json" />
+      </div>
+      <ul id="jobs"></ul>
+      <button id="forget" class="link" hidden>Delete the pack from this browser</button>
+    </main>
+    <footer>
+      Everything stays in this browser. Nothing is uploaded anywhere.
+    </footer>
+    <script src="popup.js"></script>
+  </body>
+</html>

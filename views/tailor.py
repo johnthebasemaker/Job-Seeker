@@ -155,8 +155,10 @@ with edit_tab:
             st.rerun()
     with buttons[2]:
         if st.button("Mark as ready", use_container_width=True):
+            st.session_state[state_key] = edited
+            persist(warnings=warnings)
             db.set_job_status(user["id"], job_id, "ready")
-            st.success("Marked ready to apply.")
+            _shared.goto("apply")
 
     st.subheader("Download")
     st.caption("Your contact details are added here, not before.")
@@ -178,8 +180,9 @@ with edit_tab:
         if st.button("Write one"):
             try:
                 with st.spinner("Writing..."):
-                    st.session_state[f"cover_{job_id}"] = tailor.cover_note(
-                        edited, job, _shared.llm_for(user), contact)
+                    note = tailor.cover_note(edited, job, _shared.llm_for(user), contact)
+                    st.session_state[f"cover_{job_id}"] = note
+                    persist(cover_note=note)
             except Exception as exc:
                 _shared.show_llm_error(exc)
         if st.session_state.get(f"cover_{job_id}"):

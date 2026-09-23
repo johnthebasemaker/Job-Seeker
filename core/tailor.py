@@ -235,5 +235,5 @@ def cover_note(resume_md: str, job: dict[str, Any], llm: LLM,
     redactor = _redactor(contact or {})
     user = (f"JOB\n{redactor.redact(_job_brief(job, limit=3000))}\n\n"
             f"RESUME\n{redactor.redact(resume_md)}")
-    text = llm.ask(COVER_SYSTEM, user, temperature=0.4, max_tokens=500)
+    text = llm.ask(COVER_SYSTEM, user, temperature=0.4, max_tokens=1200)
     return redactor.result.restore(text).strip()

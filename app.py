@@ -23,12 +23,14 @@ user = auth.require_login()
 profile_page = st.Page("views/onboarding.py", title="Profile", icon=":material/person:")
 jobs_page = st.Page("views/jobs.py", title="Jobs", icon=":material/work:", default=True)
 tailor_page = st.Page("views/tailor.py", title="Tailor", icon=":material/edit_note:")
+apply_page = st.Page("views/apply.py", title="Apply", icon=":material/send:")
 settings_page = st.Page("views/settings.py", title="Settings", icon=":material/settings:")
 
 _shared.PAGES.update({
     "profile": profile_page,
     "jobs": jobs_page,
     "tailor": tailor_page,
+    "apply": apply_page,
     "settings": settings_page,
 })
 
@@ -44,4 +46,4 @@ with st.sidebar:
     if st.button("Sign out", use_container_width=True):
         auth.sign_out()
 
-st.navigation([jobs_page, profile_page, tailor_page, settings_page]).run()
+st.navigation([jobs_page, profile_page, tailor_page, apply_page, settings_page]).run()

@@ -19,6 +19,11 @@ easy to break by accident.
   against the base resume by `tailor.fabrication_warnings` and new claims are
   shown to the user before saving.
 
+* **The helper never submits and never guesses.** `extension/content/fill.js`
+  must not click submit/apply/continue, must skip demographic questions, and
+  must list anything it has no saved answer for instead of filling it.
+  `tests/test_core.py::ExtensionTests` enforces the first part.
+
 ## Conventions
 
 * Canonical resume format is the markdown in `core/resume.py`'s docstring:
@@ -33,7 +38,9 @@ easy to break by accident.
 ## Commands
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v   # 26 tests, no network
+.venv/bin/python -m unittest discover -s tests -v   # 35 tests, no network
+node extension/tests/rules.test.js                  # form-filling rules
+.venv/bin/python scripts/check_keys.py              # one live call per key
 .venv/bin/streamlit run app.py                      # needs .streamlit/secrets.toml
 .venv/bin/python scripts/discover.py --user <uuid>  # one discovery run
 ```

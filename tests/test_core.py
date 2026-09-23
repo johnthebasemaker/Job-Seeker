@@ -7,8 +7,12 @@ Run them with the project venv and no extra dependencies:
 
 from __future__ import annotations
 
+import base64
+import io
+import json
 import sys
 import unittest
+import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -225,3 +229,90 @@ class TailorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PackTests(unittest.TestCase):
+    """The apply pack is what the browser helper reads."""
+
+    PROFILE = {"contact": CONTACT, "base_resume_md": SAMPLE_MD,
+               "answer_bank": {"notice_period": "30 days",
+                               "custom": [{"q": "How did you hear about us?",
+                                           "a": "Through a friend"}]}}
+    JOB_ROW = dict(JOB, id="job-1", apply_url="https://in.indeed.com/viewjob?jk=1",
+                   apply_kind="indeed_easy_apply", source_label="Indeed (via JSearch)")
+
+    def test_build_embeds_a_real_pdf(self):
+        from core import pack
+
+        built = pack.build(self.PROFILE, [self.JOB_ROW])
+        self.assertEqual(built["version"], 1)
+        self.assertEqual(len(built["jobs"]), 1)
+        entry = built["jobs"][0]
+        self.assertEqual(entry["apply_kind"], "indeed_easy_apply")
+        self.assertTrue(base64.b64decode(entry["resume_pdf_b64"]).startswith(b"%PDF"))
+        self.assertTrue(entry["resume_filename"].endswith(".pdf"))
+
+    def test_contact_travels_but_nothing_else_does(self):
+        from core import pack
+
+        built = pack.build(self.PROFILE, [self.JOB_ROW])
+        self.assertEqual(built["profile"]["email"], CONTACT["email"])
+        self.assertEqual(built["answers"]["notice_period"], "30 days")
+        # The pack is for form filling, so it must not carry the job description
+        # or the chat history around.
+        self.assertNotIn("description", built["jobs"][0])
+
+    def test_tailored_draft_wins_over_the_base_resume(self):
+        from core import pack
+
+        tailored = SAMPLE_MD.replace("Backend developer", "Senior backend developer")
+        built = pack.build(self.PROFILE, [self.JOB_ROW], {"job-1": tailored})
+        self.assertGreater(len(built["jobs"][0]["resume_pdf_b64"]), 100)
+
+    def test_round_trips_as_json(self):
+        from core import pack
+
+        data = pack.to_bytes(pack.build(self.PROFILE, [self.JOB_ROW]))
+        self.assertEqual(json.loads(data)["jobs"][0]["id"], "job-1")
+        self.assertIsNone(pack.size_warning(data))
+
+
+class ExtensionTests(unittest.TestCase):
+    """Catch a manifest that points at a file nobody shipped."""
+
+    ROOT = Path(__file__).resolve().parents[1] / "extension"
+
+    def setUp(self):
+        self.manifest = json.loads((self.ROOT / "manifest.json").read_text())
+
+    def test_every_referenced_file_exists(self):
+        referenced = [self.manifest["action"]["default_popup"]]
+        referenced += list(self.manifest["icons"].values())
+        for block in self.manifest["content_scripts"]:
+            referenced += block.get("js", []) + block.get("css", [])
+        for relative in referenced:
+            self.assertTrue((self.ROOT / relative).is_file(), f"missing {relative}")
+
+    def test_popup_loads_its_script(self):
+        html = (self.ROOT / "popup.html").read_text()
+        self.assertIn('src="popup.js"', html)
+        self.assertNotIn("onclick=", html, "inline handlers break the extension CSP")
+
+    def test_content_script_covers_the_same_sites(self):
+        matches = set(self.manifest["content_scripts"][0]["matches"])
+        self.assertEqual(matches, set(self.manifest["host_permissions"]))
+
+    def test_it_never_presses_submit(self):
+        source = (self.ROOT / "content" / "fill.js").read_text()
+        for forbidden in ("form.submit(", ".requestSubmit(", 'type="submit"]'):
+            self.assertNotIn(forbidden, source)
+        self.assertIn("never clicks Submit", source)
+
+    def test_zip_contains_the_manifest(self):
+        from core import pack
+
+        data = pack.extension_zip()
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            names = archive.namelist()
+        self.assertIn("extension/manifest.json", names)
+        self.assertIn("extension/content/fill.js", names)

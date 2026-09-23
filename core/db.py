@@ -148,6 +148,30 @@ def save_tailoring(user_id: str, job_id: str, **fields: Any) -> dict[str, Any]:
             .upsert(payload, on_conflict="user_id,job_id").execute().data[0])
 
 
+# ------------------------------------------------------------ applications
+def record_application(user_id: str, job_id: str, *, status: str = "submitted",
+                       answers: dict[str, Any] | None = None,
+                       notes: str | None = None) -> dict[str, Any]:
+    payload = {
+        "user_id": user_id,
+        "job_id": job_id,
+        "status": status,
+        "answers": answers or {},
+        "notes": notes,
+        "submitted_at": _now() if status == "submitted" else None,
+    }
+    row = (client().table("application")
+           .upsert(payload, on_conflict="user_id,job_id").execute().data[0])
+    set_job_status(user_id, job_id, "applied" if status == "submitted" else "ready")
+    return row
+
+
+def list_applications(user_id: str) -> list[dict[str, Any]]:
+    return (client().table("application").select("*")
+            .eq("user_id", user_id).order("prepared_at", desc=True)
+            .execute().data or [])
+
+
 # ------------------------------------------------------------------ quota
 def log_usage(user_id: str | None, kind: str, tokens: int = 0) -> None:
     try:

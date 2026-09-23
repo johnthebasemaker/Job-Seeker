@@ -86,7 +86,10 @@ def dev_user_email() -> str:
 
 
 # --------------------------------------------------------------------- llm
-#: Free-tier defaults. Check the provider's model list if one is retired.
+#: Free-tier defaults. Check the provider's model list if one is retired -
+#: `python scripts/check_keys.py` prints what the current key can reach.
+#: Groq's llama models need an enterprise plan; the gpt-oss pair is the free
+#: tier, and gpt-oss-20b is the lighter fallback.
 DEFAULT_MODELS = {
     "groq": "openai/gpt-oss-120b",
     "cloudflare": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
