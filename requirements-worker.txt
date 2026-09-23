@@ -1,0 +1,3 @@
+# What the GitHub Actions discovery job needs. No Streamlit, no PDF tooling.
+supabase>=2.9
+requests>=2.32

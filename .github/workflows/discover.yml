@@ -1,0 +1,42 @@
+name: Daily job discovery
+
+# The schedule is commented out on purpose. Turn it on only after the repo is
+# PRIVATE: workflow logs in a public repo are public, and this job touches
+# user data. See README, "Before you switch the cron on".
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "30 1 * * *"   # 07:00 IST
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements-worker.txt
+
+      - name: Fetch jobs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          JSEARCH_API_KEY: ${{ secrets.JSEARCH_API_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          JOOBLE_API_KEY: ${{ secrets.JOOBLE_API_KEY }}
+          DAILY_JOB_TARGET: "20"
+        run: python scripts/discover.py

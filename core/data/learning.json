@@ -1,0 +1,119 @@
+{
+  "_comment": "Free learning resources per skill. Anything missing falls back to the generic search links in core/match.py, so a gap here is harmless. Links are checked by scripts/check_links.py.",
+
+  "python": [
+    {"title": "Python official tutorial", "url": "https://docs.python.org/3/tutorial/"},
+    {"title": "freeCodeCamp - Scientific Computing with Python", "url": "https://www.freecodecamp.org/learn"}
+  ],
+  "sql": [
+    {"title": "SQLBolt - interactive SQL lessons", "url": "https://sqlbolt.com/"},
+    {"title": "Kaggle Learn - Intro to SQL", "url": "https://www.kaggle.com/learn/intro-to-sql"}
+  ],
+  "pandas": [
+    {"title": "Kaggle Learn - Pandas", "url": "https://www.kaggle.com/learn/pandas"}
+  ],
+  "machine learning": [
+    {"title": "Kaggle Learn - Intro to Machine Learning", "url": "https://www.kaggle.com/learn/intro-to-machine-learning"}
+  ],
+  "statistics": [
+    {"title": "Khan Academy - Statistics and Probability", "url": "https://www.khanacademy.org/math/statistics-probability"}
+  ],
+  "excel": [
+    {"title": "Microsoft Excel help and learning", "url": "https://support.microsoft.com/en-us/excel"}
+  ],
+  "power bi": [
+    {"title": "Microsoft Learn - Power BI training", "url": "https://learn.microsoft.com/en-us/training/powerplatform/power-bi"}
+  ],
+  "tableau": [
+    {"title": "Tableau free training videos", "url": "https://www.tableau.com/learn/training/"}
+  ],
+  "javascript": [
+    {"title": "MDN - Learn JavaScript", "url": "https://developer.mozilla.org/en-US/docs/Learn"},
+    {"title": "freeCodeCamp - JavaScript Algorithms", "url": "https://www.freecodecamp.org/learn"}
+  ],
+  "react": [
+    {"title": "react.dev - Learn React", "url": "https://react.dev/learn"}
+  ],
+  "html": [
+    {"title": "MDN - Learn web development", "url": "https://developer.mozilla.org/en-US/docs/Learn"}
+  ],
+  "css": [
+    {"title": "MDN - Learn web development", "url": "https://developer.mozilla.org/en-US/docs/Learn"}
+  ],
+  "django": [
+    {"title": "Django official tutorial", "url": "https://docs.djangoproject.com/en/stable/intro/tutorial01/"}
+  ],
+  "fastapi": [
+    {"title": "FastAPI tutorial", "url": "https://fastapi.tiangolo.com/tutorial/"}
+  ],
+  "node.js": [
+    {"title": "Node.js official guides", "url": "https://nodejs.org/en/learn"}
+  ],
+  "git": [
+    {"title": "Pro Git (free book)", "url": "https://git-scm.com/book/en/v2"}
+  ],
+  "docker": [
+    {"title": "Docker - Get started", "url": "https://docs.docker.com/get-started/"}
+  ],
+  "kubernetes": [
+    {"title": "Kubernetes basics tutorial", "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/"}
+  ],
+  "aws": [
+    {"title": "AWS Skill Builder - free digital training", "url": "https://skillbuilder.aws/"}
+  ],
+  "azure": [
+    {"title": "Microsoft Learn - Azure training", "url": "https://learn.microsoft.com/en-us/training/azure/"}
+  ],
+  "gcp": [
+    {"title": "Google Cloud Skills Boost", "url": "https://www.cloudskillsboost.google/"}
+  ],
+  "linux": [
+    {"title": "Linux Journey", "url": "https://linuxjourney.com/"}
+  ],
+  "salesforce": [
+    {"title": "Salesforce Trailhead", "url": "https://trailhead.salesforce.com/"}
+  ],
+  "hubspot": [
+    {"title": "HubSpot Academy free courses", "url": "https://academy.hubspot.com/courses"}
+  ],
+  "crm": [
+    {"title": "HubSpot Academy free courses", "url": "https://academy.hubspot.com/courses"}
+  ],
+  "digital marketing": [
+    {"title": "HubSpot Academy free courses", "url": "https://academy.hubspot.com/courses"},
+    {"title": "Google Digital Garage", "url": "https://grow.google/intl/en_in/"}
+  ],
+  "seo": [
+    {"title": "Google Search Central - SEO starter guide", "url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"}
+  ],
+  "sem": [
+    {"title": "Google Skillshop - Google Ads", "url": "https://skillshop.withgoogle.com/"}
+  ],
+  "google analytics": [
+    {"title": "Google Skillshop - Analytics", "url": "https://skillshop.withgoogle.com/"}
+  ],
+  "figma": [
+    {"title": "Figma Learn", "url": "https://help.figma.com/hc/en-us/categories/360002051613"}
+  ],
+  "canva": [
+    {"title": "Canva Design School", "url": "https://www.canva.com/designschool/"}
+  ],
+  "communication": [
+    {"title": "British Council - LearnEnglish", "url": "https://learnenglish.britishcouncil.org/"}
+  ],
+  "english proficiency": [
+    {"title": "British Council - LearnEnglish", "url": "https://learnenglish.britishcouncil.org/"}
+  ],
+  "content writing": [
+    {"title": "HubSpot Academy - Content Marketing", "url": "https://academy.hubspot.com/courses"}
+  ],
+  "agile": [
+    {"title": "Atlassian Agile Coach", "url": "https://www.atlassian.com/agile"}
+  ],
+  "accounting": [
+    {"title": "Khan Academy - Finance and capital markets", "url": "https://www.khanacademy.org/economics-finance-domain/core-finance"}
+  ],
+  "project management": [
+    {"title": "Atlassian project management guides", "url": "https://www.atlassian.com/work-management/project-management"}
+  ]
+}
