@@ -21,6 +21,7 @@ API key.
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 from typing import Any
 
@@ -53,6 +54,12 @@ def match_invite(token: str | None, table: dict[str, str]) -> str | None:
         if hmac.compare_digest(token.encode(), expected.encode()):
             found = label
     return found
+
+
+def fingerprint(token: str) -> str:
+    """8 hex chars of SHA-256: enough to compare two copies of a token by eye,
+    useless for guessing one (the tokens themselves are 256 random bits)."""
+    return hashlib.sha256(token.encode()).hexdigest()[:8]
 
 
 def identity_for(label: str) -> str:
@@ -121,13 +128,30 @@ def require_login() -> dict[str, Any]:
 
     token = st.query_params.get(INVITE_PARAM)
     if token is not None:
-        label = match_invite(token, invites())
+        table = invites()
+        label = match_invite(token, table)
         if label:
             return _sign_in(identity_for(label), label, "invite")
-        _stop_with(
-            "This link is not valid any more.",
-            "Ask the person who shared Job Seeker with you for a fresh link.",
-        )
+        st.title("Job Seeker")
+        st.write("This link is not valid any more.")
+        st.caption("Ask the person who shared Job Seeker with you for a fresh link.")
+        with st.expander("For the app owner"):
+            if not table:
+                st.write(
+                    "This server has **no personal links** in its secrets. Paste "
+                    "your whole `.streamlit/secrets.toml` into Streamlit Cloud -> "
+                    "app menu -> Settings -> Secrets, and save."
+                )
+            else:
+                prints = ", ".join(sorted(fingerprint(v) for v in table.values()))
+                st.write(f"This server has {len(table)} personal link(s): `{prints}`.")
+                st.write(
+                    f"This link is `{fingerprint(token)}`. Compare with "
+                    "`scripts/invites.py list` on your laptop: if the server's "
+                    "fingerprints differ, paste your secrets file into Streamlit "
+                    "Cloud again."
+                )
+        st.stop()
 
     if not _auth_configured():
         _stop_with(

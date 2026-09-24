@@ -247,6 +247,18 @@ class InviteLinkTests(unittest.TestCase):
         app = self._app("x" * 43)
         self.assertEqual(SIGNED_IN, [])
         self.assertIn("not valid", self._text(app))
+        # The owner can tell a stale server copy from a bad link...
+        from core.auth import fingerprint
+        self.assertIn(fingerprint(self.TOKEN), self._text(app))
+        # ...without the page ever showing a real token.
+        self.assertNotIn(self.TOKEN, self._text(app))
+
+    def test_server_without_links_says_so(self):
+        app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30)
+        app.secrets["invites"] = {}
+        app.query_params["invite"] = "x" * 43
+        app.run()
+        self.assertIn("no personal links", self._text(app))
 
     def test_no_link_and_no_google_shows_invite_only(self):
         app = self._app(None)

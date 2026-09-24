@@ -95,8 +95,14 @@ def cmd_list(_: argparse.Namespace) -> None:
     table = _table(_read())
     if not table:
         print("No invites yet. Add one with: invites.py add friend")
+    import hashlib
+
     for label in sorted(table):
-        print(f"- {label}")
+        mark = hashlib.sha256(table[label].encode()).hexdigest()[:8]
+        print(f"- {label}  (fingerprint {mark})")
+    if table:
+        print("\nIf the app says a link is not valid, its 'For the app owner' box "
+              "shows the server's fingerprints. They should match these.")
 
 
 def cmd_links(args: argparse.Namespace) -> None:
