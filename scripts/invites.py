@@ -31,7 +31,13 @@ def _read() -> str:
 
 
 def _table(text: str) -> dict[str, str]:
-    return {str(k): str(v) for k, v in tomllib.loads(text).get("invites", {}).items()}
+    try:
+        data = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        sys.exit(f"{SECRETS.name} has a typo: {exc}.\n"
+                 "Most often a curly quote (\u201c or \u201d) from a Mac editor, or "
+                 "a value missing its closing \". Fix that line and run again.")
+    return {str(k): str(v) for k, v in data.get("invites", {}).items()}
 
 
 def _write_table(text: str, table: dict[str, str]) -> str:

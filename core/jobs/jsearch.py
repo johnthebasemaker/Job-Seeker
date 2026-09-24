@@ -3,6 +3,10 @@
 This is the main way Indeed listings reach the app without touching Indeed's
 own pages. When a posting has several apply options we keep the Indeed one,
 because that is the flow the browser helper knows how to fill.
+
+API v5 moved search to ``/search-v2``: the old ``/search`` now answers 404,
+results arrive as ``data.jobs``, and paging uses an opaque ``cursor`` instead
+of page numbers.
 """
 
 from __future__ import annotations
@@ -12,8 +16,8 @@ import requests
 from .. import config
 from .base import Job, classify_apply, parse_date
 
-ENDPOINT = "https://jsearch.p.rapidapi.com/search"
 HOST = "jsearch.p.rapidapi.com"
+ENDPOINT = f"https://{HOST}/search-v2"
 
 
 def available() -> bool:
@@ -22,33 +26,39 @@ def available() -> bool:
 
 def search(query: str, country: str = "IN", *, remote_only: bool = False,
            date_posted: str = "week", pages: int = 1) -> list[Job]:
+    """One request per page. Each page is one call against the monthly quota."""
     if not available():
         return []
     jobs: list[Job] = []
-    for page in range(1, max(1, pages) + 1):
-        params = {
-            "query": query,
-            "page": str(page),
-            "num_pages": "1",
-            "country": country.lower(),
-            "date_posted": date_posted,
-        }
+    cursor: str | None = None
+    for _ in range(max(1, pages)):
+        params = {"query": query, "country": country.lower(), "date_posted": date_posted}
         if remote_only:
             params["work_from_home"] = "true"
+        if cursor:
+            params["cursor"] = cursor
         response = requests.get(
             ENDPOINT,
             headers={"X-RapidAPI-Key": config.jsearch_api_key(), "X-RapidAPI-Host": HOST},
             params=params,
-            timeout=30,
+            timeout=60,
         )
         if response.status_code == 429:
             break  # monthly free quota is gone; other sources still run
         response.raise_for_status()
-        data = response.json().get("data") or []
-        jobs.extend(_to_job(item, country) for item in data)
-        if len(data) < 10:
+        items, cursor = _page(response.json())
+        jobs.extend(_to_job(item, country) for item in items)
+        if not cursor or not items:
             break
-    return [job for job in jobs if job is not None]
+    return jobs
+
+
+def _page(body: dict) -> tuple[list[dict], str | None]:
+    """(items, next cursor) from either the v2 or the older response shape."""
+    data = body.get("data")
+    if isinstance(data, dict):
+        return list(data.get("jobs") or []), data.get("cursor") or None
+    return list(data or []), None
 
 
 def _pick_apply(item: dict) -> tuple[str | None, str | None]:
@@ -63,6 +73,8 @@ def _pick_apply(item: dict) -> tuple[str | None, str | None]:
 
 
 def _salary(item: dict) -> str | None:
+    if item.get("job_salary_string"):
+        return str(item["job_salary_string"])
     low, high = item.get("job_min_salary"), item.get("job_max_salary")
     if not low and not high:
         return item.get("job_salary") or None
@@ -77,7 +89,8 @@ def _to_job(item: dict, country: str) -> Job:
     apply_kind, is_indeed = classify_apply(url, publisher)
     city = item.get("job_city") or ""
     region = item.get("job_state") or ""
-    location = ", ".join(part for part in (city, region) if part) or item.get("job_country")
+    location = (", ".join(part for part in (city, region) if part)
+                or item.get("job_location") or item.get("job_country"))
     label = f"{publisher} (via JSearch)" if publisher else "JSearch"
     return Job(
         source="jsearch",

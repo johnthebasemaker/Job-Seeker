@@ -348,3 +348,70 @@ class AuthTests(unittest.TestCase):
 
         self.assertEqual(auth.identity_for("Friend"), "friend@invite.local")
         self.assertEqual(auth.identity_for("Priya@Gmail.com"), "priya@gmail.com")
+
+
+class JSearchTests(unittest.TestCase):
+    """JSearch v5: /search-v2, results under data.jobs, cursor paging."""
+
+    ITEM = {
+        "job_title": "Python Developer", "employer_name": "Acme", "job_city": "Chennai",
+        "job_state": "Tamil Nadu", "job_country": "IN", "job_description": "Python, FastAPI",
+        "job_publisher": "LinkedIn", "job_apply_link": "https://linkedin.com/jobs/1",
+        "job_salary_string": "INR 6-9 LPA",
+        "apply_options": [
+            {"publisher": "LinkedIn", "apply_link": "https://linkedin.com/jobs/1"},
+            {"publisher": "Indeed", "apply_link": "https://in.indeed.com/viewjob?jk=1"},
+        ],
+    }
+
+    def _response(self, body, status=200):
+        from unittest import mock
+
+        response = mock.Mock(status_code=status, ok=status < 400)
+        response.json.return_value = body
+        response.raise_for_status = mock.Mock()
+        return response
+
+    def test_reads_v2_shape_and_prefers_indeed(self):
+        import os
+        from unittest import mock
+
+        from core.jobs import jsearch
+
+        body = {"status": "OK", "data": {"jobs": [self.ITEM], "cursor": None}}
+        with mock.patch.dict(os.environ, {"JSEARCH_API_KEY": "k"}), \
+                mock.patch.object(jsearch.requests, "get", return_value=self._response(body)) as get:
+            jobs = jsearch.search("python developer in Chennai", "IN")
+        self.assertTrue(get.call_args.args[0].endswith("/search-v2"))
+        self.assertNotIn("page", get.call_args.kwargs["params"])
+        self.assertEqual(len(jobs), 1)
+        self.assertTrue(jobs[0].is_indeed, "the Indeed apply option should win")
+        self.assertEqual(jobs[0].apply_kind, "indeed_easy_apply")
+        self.assertEqual(jobs[0].salary_text, "INR 6-9 LPA")
+
+    def test_follows_the_cursor_for_extra_pages(self):
+        import os
+        from unittest import mock
+
+        from core.jobs import jsearch
+
+        pages = [
+            self._response({"data": {"jobs": [self.ITEM], "cursor": "next-1"}}),
+            self._response({"data": {"jobs": [self.ITEM], "cursor": None}}),
+        ]
+        with mock.patch.dict(os.environ, {"JSEARCH_API_KEY": "k"}), \
+                mock.patch.object(jsearch.requests, "get", side_effect=pages) as get:
+            jobs = jsearch.search("q", "IN", pages=3)
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(get.call_count, 2, "stops when the cursor runs out")
+        self.assertEqual(get.call_args_list[1].kwargs["params"]["cursor"], "next-1")
+
+    def test_quota_exhausted_returns_nothing_quietly(self):
+        import os
+        from unittest import mock
+
+        from core.jobs import jsearch
+
+        with mock.patch.dict(os.environ, {"JSEARCH_API_KEY": "k"}), \
+                mock.patch.object(jsearch.requests, "get", return_value=self._response({}, 429)):
+            self.assertEqual(jsearch.search("q", "IN"), [])

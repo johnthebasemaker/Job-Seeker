@@ -28,7 +28,11 @@ def _load_local_secrets() -> None:
     path = Path(__file__).resolve().parents[1] / ".streamlit" / "secrets.toml"
     if not path.exists():
         return
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        sys.exit(f"secrets.toml has a typo: {exc}. Most often a curly quote "
+                 "from a Mac editor, or a value missing its closing quote.")
     for key, value in data.items():
         if isinstance(value, (str, int, float)) and key not in os.environ:
             os.environ[key] = str(value)
@@ -94,24 +98,28 @@ def check_jsearch() -> None:
     key = config.jsearch_api_key()
     if not key:
         return line(SKIP, "JSearch", "JSEARCH_API_KEY not set")
-    host = "jsearch.p.rapidapi.com"
+    from core.jobs import jsearch
+
     try:
         response = requests.get(
-            f"https://{host}/search",
-            headers={"X-RapidAPI-Key": key, "X-RapidAPI-Host": host},
-            params={"query": "python developer in Chennai", "page": "1",
-                    "num_pages": "1", "country": "in"}, timeout=45)
+            jsearch.ENDPOINT,
+            headers={"X-RapidAPI-Key": key, "X-RapidAPI-Host": jsearch.HOST},
+            params={"query": "python developer in Chennai", "country": "in"}, timeout=90)
     except requests.RequestException as exc:
-        return line(BAD, "JSearch", str(exc))
-    if response.status_code in (403, 404):
+        return line(BAD, "JSearch", f"{exc} - try again, the first call is sometimes slow")
+    if response.status_code == 403:
         return line(BAD, "JSearch",
                     "the key is not subscribed to this API. Open the JSearch page on "
                     "RapidAPI and subscribe to the free Basic plan.")
+    if response.status_code == 404:
+        return line(BAD, "JSearch",
+                    f"JSearch no longer has {jsearch.ENDPOINT} - the API changed again. "
+                    "Update ENDPOINT in core/jobs/jsearch.py.")
     if response.status_code == 429:
         return line(BAD, "JSearch", "monthly quota used up")
     if not response.ok:
         return line(BAD, "JSearch", f"{response.status_code} {response.text[:120]}")
-    data = response.json().get("data") or []
+    data, _ = jsearch._page(response.json())
     publishers = {}
     for item in data:
         name = item.get("job_publisher") or "unknown"
