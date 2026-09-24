@@ -152,25 +152,31 @@ def check_jooble() -> None:
     line(OK, "Jooble", f"{len(response.json().get('jobs', []))} results for India")
 
 
-def check_google_login() -> None:
-    try:
-        import tomllib
-        path = Path(__file__).resolve().parents[1] / ".streamlit" / "secrets.toml"
-        auth = tomllib.loads(path.read_text(encoding="utf-8")).get("auth", {}) if path.exists() else {}
-    except Exception:
-        auth = {}
+def check_sign_in() -> None:
+    import tomllib
+
+    path = Path(__file__).resolve().parents[1] / ".streamlit" / "secrets.toml"
+    data = tomllib.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+    invites = {k: v for k, v in (data.get("invites") or {}).items() if v}
+    short = [k for k, v in invites.items() if len(str(v)) < 24]
+    if short:
+        line(BAD, "Invite links", "token too short for: " + ", ".join(short)
+             + " - recreate with scripts/invites.py revoke <name>")
+    elif invites:
+        line(OK, "Invite links", f"{len(invites)} person(s): " + ", ".join(sorted(invites)))
+    else:
+        line(SKIP, "Invite links", "none yet - scripts/invites.py add friend")
+
+    auth = data.get("auth") or {}
     if not auth:
-        return line(SKIP, "Google sign-in", "no [auth] block (fine if APP_DEV_MODE is on)")
-    missing = [k for k in ("client_id", "client_secret", "cookie_secret", "redirect_uri")
-               if not auth.get(k)]
-    if missing:
-        return line(BAD, "Google sign-in", "missing: " + ", ".join(missing))
-    if not str(auth["client_id"]).endswith(".apps.googleusercontent.com"):
+        return line(SKIP, "Google sign-in", "not set up (optional - invite links work without it)")
+    client_id = str(auth.get("client_id", ""))
+    if not client_id.endswith(".apps.googleusercontent.com") or client_id.startswith("."):
         return line(BAD, "Google sign-in",
-                    "client_id is not an OAuth client. You need an OAuth 2.0 Client ID "
-                    "(APIs & Services -> Credentials -> Create credentials -> OAuth client ID), "
-                    "not an API key.")
-    if "a-long-random-string" in str(auth["cookie_secret"]):
+                    "client_id is not a real OAuth client ID. Either finish the OAuth "
+                    "client or comment out the [auth] block.")
+    if "a-long-random-string" in str(auth.get("cookie_secret", "")):
         return line(BAD, "Google sign-in", "cookie_secret is still the example value")
     line(OK, "Google sign-in", "client id and secret look right")
 
@@ -179,7 +185,7 @@ def main() -> int:
     _load_local_secrets()
     print("Checking keys. No secret values are printed.\n")
     for check in (check_supabase, check_llm, check_jsearch, check_adzuna,
-                  check_jooble, check_google_login):
+                  check_jooble, check_sign_in):
         check()
     print("\nAnything marked FAIL stops that feature only - the rest still runs.")
     return 0

@@ -24,6 +24,11 @@ easy to break by accident.
   must list anything it has no saved answer for instead of filling it.
   `tests/test_core.py::ExtensionTests` enforces the first part.
 
+* **Invite links are bearer secrets.** Tokens are compared with
+  `hmac.compare_digest`, must be at least 24 characters, and are only ever
+  printed by `scripts/invites.py links` in the owner's terminal. The app is
+  meant to sit behind Community Cloud's private-app viewer list.
+
 ## Conventions
 
 * Canonical resume format is the markdown in `core/resume.py`'s docstring:
@@ -38,7 +43,7 @@ easy to break by accident.
 ## Commands
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v   # 35 tests, no network
+.venv/bin/python -m unittest discover -s tests -v   # 43 tests, no network
 node extension/tests/rules.test.js                  # form-filling rules
 .venv/bin/python scripts/check_keys.py              # one live call per key
 .venv/bin/streamlit run app.py                      # needs .streamlit/secrets.toml

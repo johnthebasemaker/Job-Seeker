@@ -89,9 +89,22 @@ nothing.
 
 Any of them can be left out; the app uses what it has and says so in Settings.
 
-### 3. Google sign-in
+### 3. Sign-in: personal links (default) or Google (optional)
 
-Create an OAuth client (type: Web application) at console.cloud.google.com.
+**Personal links** need no Google Cloud setup. Each person gets their own
+link, `https://<app>/?invite=<token>`:
+
+```bash
+.venv/bin/python scripts/invites.py add friend
+.venv/bin/python scripts/invites.py links https://YOUR-APP.streamlit.app
+```
+
+A link works like a password, so deploy the app as **private** on Streamlit
+Community Cloud and add each person as a viewer (see "Share it" below). Then a
+forwarded link is useless to anyone not on the viewer list. `invites.py
+revoke friend` replaces a link.
+
+**Google sign-in** is optional. Create an OAuth client (type: Web application) at console.cloud.google.com.
 Add both redirect URIs:
 
 ```
@@ -124,13 +137,31 @@ idle and wake on the next visit.
 ### 6. The daily cron
 
 `.github/workflows/discover.yml` runs at 01:30 UTC (07:00 IST). It needs the
-same keys under **Settings -> Secrets and variables -> Actions**.
+same keys under **Settings -> Secrets and variables -> Actions**, with exactly
+the names the workflow reads. `scripts/sync_actions_secrets.py` copies them
+from your secrets file without printing them.
 
 **The repository must stay private.** Workflow logs on a public repo are
 readable by anyone and this job touches real user data. Private repos get
 2,000 free Actions minutes a month, far more than a daily run needs. Note
 that GitHub disables scheduled workflows in repositories with no activity for
 60 days - one commit resets that.
+
+## Share it
+
+1. At **share.streamlit.io**, sign in with GitHub and allow access to private
+   repositories.
+2. **Create app** -> repository `johnthebasemaker/Job-Seeker`, branch `main`,
+   main file `app.py`, and pick a web address.
+3. **Advanced settings** -> Python 3.12, and paste the whole of
+   `.streamlit/secrets.toml` into **Secrets**. Deploy.
+4. Leave the app **private**, open **Share**, and add your friend's email as
+   a viewer. Streamlit emails her an invitation.
+5. Print her personal link and send it:
+   `.venv/bin/python scripts/invites.py links https://YOUR-APP.streamlit.app`
+
+The first time she opens it, Streamlit asks her to sign in with Google; after
+that the link just opens. Community Cloud allows one private app per account.
 
 ## Using it on a phone
 
@@ -171,6 +202,8 @@ extension/              the Chrome helper (manifest v3)
 apps-script/            the Gmail to Calendar script
 scripts/discover.py     the cron entry point
 scripts/check_keys.py   live check of every key, prints no secrets
+scripts/invites.py      create, print and revoke personal links
+scripts/sync_actions_secrets.py  copy the cron's keys into GitHub Actions
 supabase/schema.sql     the database, as applied
 ```
 

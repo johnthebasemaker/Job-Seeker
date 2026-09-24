@@ -66,11 +66,15 @@ JOB_ROW = dict(
 )
 
 
+SIGNED_IN: list[str] = []
+
+
 class FakeDB:
     """Just enough of core.db for the pages to render."""
 
     @staticmethod
     def get_or_create_user(email, display_name=None):
+        SIGNED_IN.append(email)
         return USER
 
     @staticmethod
@@ -197,6 +201,57 @@ class PageTests(unittest.TestCase):
         app = self._run("views/settings.py")
         text = " ".join(m.value for m in app.markdown)
         self.assertIn("Delete everything", " ".join(h.value for h in app.subheader) + text)
+
+
+class InviteLinkTests(unittest.TestCase):
+    """The shared-link sign-in, with dev mode off."""
+
+    TOKEN = "t" * 43
+
+    @classmethod
+    def setUpClass(cls):
+        cls.originals = _install_fake_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        for name, value in cls.originals.items():
+            if value is not None:
+                setattr(db, name, value)
+
+    def setUp(self):
+        self._dev = os.environ.get("APP_DEV_MODE")
+        os.environ["APP_DEV_MODE"] = "false"
+        SIGNED_IN.clear()
+
+    def tearDown(self):
+        os.environ["APP_DEV_MODE"] = self._dev or "true"
+
+    def _app(self, invite: str | None) -> AppTest:
+        app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=30)
+        app.secrets["invites"] = {"friend": self.TOKEN}
+        if invite is not None:
+            app.query_params["invite"] = invite
+        app.run()
+        self.assertFalse(app.exception, [e.message for e in app.exception])
+        return app
+
+    def _text(self, app: AppTest) -> str:
+        return " ".join([m.value for m in app.markdown] + [c.value for c in app.caption])
+
+    def test_valid_link_opens_the_app_as_that_person(self):
+        app = self._app(self.TOKEN)
+        self.assertEqual(SIGNED_IN, ["friend@invite.local"])
+        self.assertIn("Jobs", [t.value for t in app.title])
+
+    def test_wrong_link_is_refused(self):
+        app = self._app("x" * 43)
+        self.assertEqual(SIGNED_IN, [])
+        self.assertIn("not valid", self._text(app))
+
+    def test_no_link_and_no_google_shows_invite_only(self):
+        app = self._app(None)
+        self.assertEqual(SIGNED_IN, [])
+        self.assertIn("invite-only", self._text(app))
 
 
 if __name__ == "__main__":

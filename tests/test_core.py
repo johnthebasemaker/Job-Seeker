@@ -316,3 +316,35 @@ class ExtensionTests(unittest.TestCase):
             names = archive.namelist()
         self.assertIn("extension/manifest.json", names)
         self.assertIn("extension/content/fill.js", names)
+
+
+class AuthTests(unittest.TestCase):
+    """Personal invite links: the right person in, everyone else out."""
+
+    TABLE = {"friend": "f" * 43, "owner": "o" * 43, "broken": "short"}
+
+    def test_matching_token_signs_in_that_person(self):
+        from core import auth
+
+        self.assertEqual(auth.match_invite("f" * 43, self.TABLE), "friend")
+        self.assertEqual(auth.match_invite("o" * 43, self.TABLE), "owner")
+
+    def test_wrong_or_missing_token_is_refused(self):
+        from core import auth
+
+        self.assertIsNone(auth.match_invite("x" * 43, self.TABLE))
+        self.assertIsNone(auth.match_invite("", self.TABLE))
+        self.assertIsNone(auth.match_invite(None, self.TABLE))
+
+    def test_short_tokens_never_work(self):
+        from core import auth
+
+        # A too-short token in secrets must not become a guessable way in.
+        self.assertIsNone(auth.match_invite("short", self.TABLE))
+        self.assertIsNone(auth.match_invite("f" * 10, {"friend": "f" * 10}))
+
+    def test_labels_become_stable_account_keys(self):
+        from core import auth
+
+        self.assertEqual(auth.identity_for("Friend"), "friend@invite.local")
+        self.assertEqual(auth.identity_for("Priya@Gmail.com"), "priya@gmail.com")
